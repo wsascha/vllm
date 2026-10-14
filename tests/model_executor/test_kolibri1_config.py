@@ -14,12 +14,21 @@ RESPONSE_TEMPLATE = {
     "start_anchor": "<|im_start|>assistant\n",
     "fields": {
         "thinking": {"open": "<think>", "close": "</think>", "content": "text"},
+        "tool_calls": {
+            "open": "<tool_call>",
+            "close": "</tool_call>",
+            "repeats": True,
+            "content": "json",
+            "transform": {"type": "function", "function": "{content}"},
+        },
         "content": {"close": "<|im_end|>", "content": "text"},
     },
 }
 
 
-def _reasoning_parser(tmp_path, tokenizer_config: dict, reasoning_parser: str):
+def _parsers(
+    tmp_path, tokenizer_config: dict, reasoning_parser: str, tool_call_parser: str
+) -> tuple[str, str]:
     (tmp_path / "tokenizer_config.json").write_text(json.dumps(tokenizer_config))
     vllm_config = SimpleNamespace(
         model_config=SimpleNamespace(
@@ -28,26 +37,48 @@ def _reasoning_parser(tmp_path, tokenizer_config: dict, reasoning_parser: str):
             tokenizer_revision=None,
         ),
         structured_outputs_config=StructuredOutputsConfig(
-            reasoning_parser=reasoning_parser
+            reasoning_parser=reasoning_parser, tool_call_parser=tool_call_parser
         ),
     )
     Kolibri1ForCausalLMConfig.verify_and_update_config(vllm_config)
-    return vllm_config.structured_outputs_config.reasoning_parser
+    config = vllm_config.structured_outputs_config
+    return config.reasoning_parser, config.tool_call_parser
 
 
 @pytest.mark.parametrize(
-    ("tokenizer_config", "reasoning_parser", "expected"),
+    ("tokenizer_config", "flags", "expected"),
     [
-        pytest.param({"response_template": RESPONSE_TEMPLATE}, "", "hf", id="default"),
-        pytest.param({}, "", "", id="no-template"),
         pytest.param(
-            {"response_template": RESPONSE_TEMPLATE}, "qwen3", "qwen3", id="explicit"
+            {"response_template": RESPONSE_TEMPLATE},
+            ("", ""),
+            ("hf", "hf"),
+            id="default",
+        ),
+        pytest.param({}, ("", ""), ("", ""), id="no-template"),
+        pytest.param(
+            {"response_template": RESPONSE_TEMPLATE},
+            ("qwen3", ""),
+            ("qwen3", ""),
+            id="explicit-reasoning",
+        ),
+        pytest.param(
+            {"response_template": RESPONSE_TEMPLATE},
+            ("", "hermes"),
+            ("", "hermes"),
+            id="explicit-tool",
+        ),
+        pytest.param(
+            {"response_template": RESPONSE_TEMPLATE},
+            ("hf", ""),
+            ("hf", "hf"),
+            id="explicit-hf",
         ),
     ],
 )
-def test_reasoning_parser_defaults_to_hf_with_response_template(
-    tmp_path, tokenizer_config, reasoning_parser, expected
+def test_parsers_default_to_hf_with_response_template(
+    tmp_path, tokenizer_config, flags, expected
 ):
-    """Older Kolibri 1 checkpoints ship no response template; defaulting them
-    to `hf` would fail at startup. An explicit `--reasoning-parser` wins."""
-    assert _reasoning_parser(tmp_path, tokenizer_config, reasoning_parser) == expected
+    """Older Kolibri 1 checkpoints ship no response template, where `hf` would
+    fail at startup. `hf` cannot be combined with other parsers, so an explicit
+    non-`hf` parser suppresses both defaults."""
+    assert _parsers(tmp_path, tokenizer_config, *flags) == expected

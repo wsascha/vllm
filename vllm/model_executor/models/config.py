@@ -473,10 +473,14 @@ class KimiK3ForConditionalGenerationConfig(VerifyAndUpdateConfig):
 class Kolibri1ForCausalLMConfig(VerifyAndUpdateConfig):
     @staticmethod
     def verify_and_update_config(vllm_config: "VllmConfig") -> None:
-        """Default to the `hf` reasoning parser when the checkpoint's response
-        template can parse Kolibri 1's thinking."""
-        structured_outputs_config = vllm_config.structured_outputs_config
-        if structured_outputs_config.reasoning_parser != "":
+        """Default to the `hf` reasoning and tool call parsers when the
+        checkpoint's response template can parse Kolibri 1's output.
+
+        `hf` cannot be combined with other parsers, so neither default applies
+        when the other parser is set to something else.
+        """
+        config = vllm_config.structured_outputs_config
+        if config.reasoning_parser and config.tool_call_parser:
             return
 
         from vllm.transformers_utils.config import try_get_tokenizer_config
@@ -488,9 +492,24 @@ class Kolibri1ForCausalLMConfig(VerifyAndUpdateConfig):
             revision=model_config.tokenizer_revision,
         )
         template = (tokenizer_config or {}).get("response_template")
-        if isinstance(template, dict) and "thinking" in template.get("fields", {}):
-            structured_outputs_config.reasoning_parser = "hf"
+        if not isinstance(template, dict):
+            return
+        fields = template.get("fields", {})
+
+        if (
+            not config.reasoning_parser
+            and "thinking" in fields
+            and config.tool_call_parser in ("", "hf")
+        ):
+            config.reasoning_parser = "hf"
             logger.info("Using the hf reasoning parser for Kolibri 1.")
+        if (
+            not config.tool_call_parser
+            and "tool_calls" in fields
+            and config.reasoning_parser in ("", "hf")
+        ):
+            config.tool_call_parser = "hf"
+            logger.info("Using the hf tool call parser for Kolibri 1.")
 
 
 class GptOssForCausalLMConfig(VerifyAndUpdateConfig):
