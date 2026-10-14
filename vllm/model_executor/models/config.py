@@ -470,6 +470,29 @@ class KimiK3ForConditionalGenerationConfig(VerifyAndUpdateConfig):
                 quant_config["quant_method"] = "mxfp4"
 
 
+class Kolibri1ForCausalLMConfig(VerifyAndUpdateConfig):
+    @staticmethod
+    def verify_and_update_config(vllm_config: "VllmConfig") -> None:
+        """Default to the `hf` reasoning parser when the checkpoint's response
+        template can parse Kolibri 1's thinking."""
+        structured_outputs_config = vllm_config.structured_outputs_config
+        if structured_outputs_config.reasoning_parser != "":
+            return
+
+        from vllm.transformers_utils.config import try_get_tokenizer_config
+
+        model_config = vllm_config.model_config
+        tokenizer_config = try_get_tokenizer_config(
+            model_config.tokenizer,
+            trust_remote_code=model_config.trust_remote_code,
+            revision=model_config.tokenizer_revision,
+        )
+        template = (tokenizer_config or {}).get("response_template")
+        if isinstance(template, dict) and "thinking" in template.get("fields", {}):
+            structured_outputs_config.reasoning_parser = "hf"
+            logger.info("Using the hf reasoning parser for Kolibri 1.")
+
+
 class GptOssForCausalLMConfig(VerifyAndUpdateConfig):
     @staticmethod
     def verify_and_update_model_config(model_config: "ModelConfig") -> None:
@@ -1115,6 +1138,7 @@ MODELS_CONFIG_MAP: dict[str, type[VerifyAndUpdateConfig]] = {
     "JinaVLForRanking": JinaVLForSequenceClassificationConfig,
     "KimiK3ForConditionalGeneration": KimiK3ForConditionalGenerationConfig,
     "KimiK3MTPModel": KimiK3ForConditionalGenerationConfig,
+    "Kolibri1ForCausalLM": Kolibri1ForCausalLMConfig,
     "LlamaBidirectionalForSequenceClassification": LlamaBidirectionalConfig,
     "LlamaBidirectionalModel": LlamaBidirectionalConfig,
     "LlamaNemotronVLForSequenceClassification": LlamaNemotronVLConfig,
