@@ -8,9 +8,11 @@ import pytest
 
 import vllm.entrypoints.launchers.cli_args as cli_args_module
 from tests.utils import VLLM_PATH
+from vllm.config import StructuredOutputsConfig
 from vllm.engine.arg_utils import AsyncEngineArgs
 from vllm.entrypoints.launchers.cli_args import (
     make_arg_parser,
+    resolve_tool_call_parser,
     validate_parsed_serve_args,
 )
 from vllm.entrypoints.openai.models.protocol import LoRAModulePath
@@ -250,11 +252,27 @@ def test_rust_grpc_port_requires_serve_subcommand(monkeypatch):
 
 
 def test_enable_auto_choice_fails_without_tool_call_parser(serve_parser):
-    """Ensure validation fails if tool choice is enabled with no call parser."""
-    # If we enable-auto-tool-choice, explode with no tool-call-parser
+    """Auto tool choice needs a tool call parser from the flag or the model."""
     args = serve_parser.parse_args(args=["--enable-auto-tool-choice"])
+    validate_parsed_serve_args(args)
     with pytest.raises(TypeError):
-        validate_parsed_serve_args(args)
+        resolve_tool_call_parser(args, StructuredOutputsConfig())
+
+
+@pytest.mark.parametrize(
+    ("flag", "model_default", "expected"),
+    [
+        pytest.param([], "hermes", "hermes", id="model-default"),
+        pytest.param(
+            ["--tool-call-parser", "mistral"], "hermes", "mistral", id="flag-wins"
+        ),
+        pytest.param([], "", None, id="unset"),
+    ],
+)
+def test_resolve_tool_call_parser(serve_parser, flag, model_default, expected):
+    args = serve_parser.parse_args(args=flag)
+    config = StructuredOutputsConfig(tool_call_parser=model_default)
+    assert resolve_tool_call_parser(args, config) == expected
 
 
 def test_tool_call_parser_flag_reaches_structured_outputs_config(serve_parser):
@@ -369,7 +387,7 @@ def launch_render_parser():
 @pytest.mark.parametrize(
     "cli_args, error",
     [
-        (["--enable-auto-tool-choice"], TypeError),
+        (["--enable-log-outputs"], TypeError),
         (["--grpc-port", "50051"], ValueError),
     ],
 )

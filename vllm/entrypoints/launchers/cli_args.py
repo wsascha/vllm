@@ -421,8 +421,13 @@ def resolve_default_chat_template_kwargs(
 def resolve_tool_call_parser(
     args: argparse.Namespace, structured_outputs_config: StructuredOutputsConfig
 ) -> str | None:
-    """Return the tool call parser the frontend uses."""
-    return args.tool_call_parser
+    """Return `--tool-call-parser`, else the model's default from the config."""
+    tool_call_parser = (
+        args.tool_call_parser or structured_outputs_config.tool_call_parser or None
+    )
+    if args.enable_auto_tool_choice and not tool_call_parser:
+        raise TypeError("Error: --enable-auto-tool-choice requires --tool-call-parser")
+    return tool_call_parser
 
 
 def make_arg_parser(parser: FlexibleArgumentParser) -> FlexibleArgumentParser:
@@ -526,9 +531,6 @@ def validate_parsed_serve_args(args: argparse.Namespace):
 
     validate_grpc_port_arg(args)
 
-    # Enable auto tool needs a tool call parser to be valid
-    if args.enable_auto_tool_choice and not args.tool_call_parser:
-        raise TypeError("Error: --enable-auto-tool-choice requires --tool-call-parser")
     if args.enable_log_outputs and not args.enable_log_requests:
         raise TypeError("Error: --enable-log-outputs requires --enable-log-requests")
 
