@@ -187,7 +187,9 @@ class ParserManager:
             }:
                 raise TypeError(
                     "The hf parser cannot be combined with other "
-                    "reasoning or tool call parsers"
+                    "reasoning or tool call parsers. The model may default "
+                    "its reasoning parser to hf; set --reasoning-parser "
+                    "explicitly to use another."
                 )
             from vllm.parser.response_template import (
                 ResponseTemplateParser,
