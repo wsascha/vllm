@@ -5,7 +5,10 @@ from argparse import Namespace
 from starlette.datastructures import State
 
 from vllm.config import VllmConfig
-from vllm.entrypoints.launchers.cli_args import resolve_default_chat_template_kwargs
+from vllm.entrypoints.launchers.cli_args import (
+    resolve_default_chat_template_kwargs,
+    resolve_tool_call_parser,
+)
 from vllm.entrypoints.mcp.tool_server import init_tool_server
 from vllm.entrypoints.openai.models.protocol import BaseModelPath
 from vllm.entrypoints.openai.models.serving import OpenAIModelRegistry
@@ -59,6 +62,9 @@ async def init_render_app_state(
     reasoning_parser = (
         args.reasoning_parser or vllm_config.structured_outputs_config.reasoning_parser
     )
+    tool_call_parser = resolve_tool_call_parser(
+        args, vllm_config.structured_outputs_config
+    )
 
     state.online_renderer = OnlineRenderer(
         model_config=vllm_config.model_config,
@@ -70,7 +76,7 @@ async def init_render_app_state(
         trust_request_mm_kwargs=args.trust_request_mm_kwargs,
         enable_auto_tools=args.enable_auto_tool_choice,
         exclude_tools_when_tool_choice_none=args.exclude_tools_when_tool_choice_none,
-        tool_parser=args.tool_call_parser,
+        tool_parser=tool_call_parser,
         tool_strict_level=args.tool_strict_level,
         reasoning_parser=reasoning_parser,
         default_chat_template_kwargs=default_chat_template_kwargs,
@@ -87,7 +93,7 @@ async def init_render_app_state(
         trust_request_chat_template=args.trust_request_chat_template,
         enable_auto_tools=args.enable_auto_tool_choice,
         exclude_tools_when_tool_choice_none=args.exclude_tools_when_tool_choice_none,
-        tool_parser=args.tool_call_parser,
+        tool_parser=tool_call_parser,
         tool_strict_level=args.tool_strict_level,
         reasoning_parser=reasoning_parser,
         default_chat_template_kwargs=default_chat_template_kwargs,

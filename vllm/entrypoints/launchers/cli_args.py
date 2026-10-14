@@ -12,7 +12,7 @@ from dataclasses import field
 from typing import Any, Literal
 
 import vllm.envs as envs
-from vllm.config import config
+from vllm.config import StructuredOutputsConfig, config
 from vllm.engine.arg_utils import AsyncEngineArgs, optional_type
 from vllm.entrypoints.anthropic.protocol import (
     AnthropicDisabledThinkingEffortOption,
@@ -416,6 +416,13 @@ def resolve_default_chat_template_kwargs(
     if getattr(args, "cohere_format", None):
         kwargs.setdefault("cohere_format", args.cohere_format)
     return kwargs
+
+
+def resolve_tool_call_parser(
+    args: argparse.Namespace, structured_outputs_config: StructuredOutputsConfig
+) -> str | None:
+    """Return the tool call parser the frontend uses."""
+    return args.tool_call_parser
 
 
 def make_arg_parser(parser: FlexibleArgumentParser) -> FlexibleArgumentParser:

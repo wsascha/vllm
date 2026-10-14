@@ -7,7 +7,10 @@ from typing import cast
 from starlette.datastructures import State
 
 from vllm.engine.protocol import EngineClient
-from vllm.entrypoints.launchers.cli_args import resolve_default_chat_template_kwargs
+from vllm.entrypoints.launchers.cli_args import (
+    resolve_default_chat_template_kwargs,
+    resolve_tool_call_parser,
+)
 from vllm.entrypoints.mcp.tool_server import init_tool_server
 from vllm.entrypoints.openai.models.protocol import BaseModelPath
 from vllm.entrypoints.openai.models.serving import OpenAIServingModels
@@ -28,8 +31,11 @@ async def init_app_state(
     supported_tasks: tuple["SupportedTask", ...] | None = None,
 ) -> None:
     vllm_config = engine_client.vllm_config
+    tool_call_parser = resolve_tool_call_parser(
+        args, vllm_config.structured_outputs_config
+    )
 
-    if args.tool_call_parser is not None:
+    if tool_call_parser is not None:
         from vllm.parser.metrics import init_parser_metrics
 
         init_parser_metrics(
@@ -95,7 +101,7 @@ async def init_app_state(
         trust_request_mm_kwargs=args.trust_request_mm_kwargs,
         enable_auto_tools=args.enable_auto_tool_choice,
         exclude_tools_when_tool_choice_none=args.exclude_tools_when_tool_choice_none,
-        tool_parser=args.tool_call_parser,
+        tool_parser=tool_call_parser,
         tool_strict_level=args.tool_strict_level,
         reasoning_parser=args.structured_outputs_config.reasoning_parser,
         default_chat_template_kwargs=default_chat_template_kwargs,
@@ -112,7 +118,7 @@ async def init_app_state(
         trust_request_chat_template=args.trust_request_chat_template,
         enable_auto_tools=args.enable_auto_tool_choice,
         exclude_tools_when_tool_choice_none=args.exclude_tools_when_tool_choice_none,
-        tool_parser=args.tool_call_parser,
+        tool_parser=tool_call_parser,
         tool_strict_level=args.tool_strict_level,
         reasoning_parser=args.structured_outputs_config.reasoning_parser,
         default_chat_template_kwargs=default_chat_template_kwargs,

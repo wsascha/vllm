@@ -63,6 +63,7 @@ async def init_generate_state(
     default_chat_template_kwargs: dict[str, Any],
 ):
     from vllm.entrypoints.anthropic.serving import AnthropicServingMessages
+    from vllm.entrypoints.launchers.cli_args import resolve_tool_call_parser
     from vllm.renderers.chat_utils import load_chat_template
 
     # The Cohere serving handler depends on the optional `cohere` SDK for
@@ -96,6 +97,9 @@ async def init_generate_state(
     )
 
     resolved_chat_template = load_chat_template(args.chat_template)
+    tool_call_parser = resolve_tool_call_parser(
+        args, engine_client.vllm_config.structured_outputs_config
+    )
 
     # Render endpoints are always backed by OnlineRenderer so that chat,
     # completion, and Responses rendering work on both generate-mode and
@@ -111,7 +115,7 @@ async def init_generate_state(
             chat_template_content_format=args.chat_template_content_format,
             return_tokens_as_token_ids=args.return_tokens_as_token_ids,
             enable_auto_tools=args.enable_auto_tool_choice,
-            tool_parser=args.tool_call_parser,
+            tool_parser=tool_call_parser,
             tool_strict_level=args.tool_strict_level,
             tool_server=state.tool_server,
             reasoning_parser=args.structured_outputs_config.reasoning_parser,
@@ -137,7 +141,7 @@ async def init_generate_state(
         return_tokens_as_token_ids=args.return_tokens_as_token_ids,
         enable_auto_tools=args.enable_auto_tool_choice,
         exclude_tools_when_tool_choice_none=args.exclude_tools_when_tool_choice_none,
-        tool_parser=args.tool_call_parser,
+        tool_parser=tool_call_parser,
         tool_strict_level=args.tool_strict_level,
         reasoning_parser=args.structured_outputs_config.reasoning_parser,
         enable_prompt_tokens_details=args.enable_prompt_tokens_details,
@@ -179,7 +183,7 @@ async def init_generate_state(
             chat_template_content_format=args.chat_template_content_format,
             return_tokens_as_token_ids=args.return_tokens_as_token_ids,
             enable_auto_tools=args.enable_auto_tool_choice,
-            tool_parser=args.tool_call_parser,
+            tool_parser=tool_call_parser,
             tool_strict_level=args.tool_strict_level,
             reasoning_parser=args.structured_outputs_config.reasoning_parser,
             enable_prompt_tokens_details=args.enable_prompt_tokens_details,
@@ -203,7 +207,7 @@ async def init_generate_state(
             chat_template_content_format=args.chat_template_content_format,
             return_tokens_as_token_ids=args.return_tokens_as_token_ids,
             enable_auto_tools=args.enable_auto_tool_choice,
-            tool_parser=args.tool_call_parser,
+            tool_parser=tool_call_parser,
             tool_strict_level=args.tool_strict_level,
             reasoning_parser=args.structured_outputs_config.reasoning_parser,
             enable_prompt_tokens_details=args.enable_prompt_tokens_details,
