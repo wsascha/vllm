@@ -404,6 +404,17 @@ Supported models:
 
 Flags: `--tool-call-parser kimi_k2`
 
+### Kolibri 1 Models (`hf`)
+
+Supported models:
+
+* `Aleph-Alpha/Kolibri-1`
+* `Aleph-Alpha/Kolibri-1-BF16`
+
+Flags: `--enable-auto-tool-choice`
+
+Kolibri 1 uses the `hf` tool call parser by default, from its checkpoint's response template, so the limits of the [`hf` parser](#checkpoint-response-templates-hf) apply. `--tool-call-parser hermes` selects the Hermes parser instead; since `hf` cannot be combined with other parsers, it also turns off the `hf` reasoning default, so add `--reasoning-parser qwen3` to keep reasoning parsing.
+
 ### Hunyuan Models (`hunyuan_a13b`)
 
 Supported models:
