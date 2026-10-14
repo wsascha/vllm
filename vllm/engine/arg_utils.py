@@ -721,6 +721,7 @@ class EngineArgs:
     aux_output_config: AuxOutputConfig = get_field(VllmConfig, "aux_output_config")
     reasoning_parser: str = StructuredOutputsConfig.reasoning_parser
     reasoning_parser_plugin: str | None = None
+    tool_call_parser: str | None = None
 
     speculative_config: dict[str, Any] | None = None
     spec_method: str | None = None
@@ -2193,6 +2194,9 @@ class EngineArgs:
             self.structured_outputs_config.reasoning_parser_plugin = (
                 self.reasoning_parser_plugin
             )
+
+        if self.tool_call_parser:
+            self.structured_outputs_config.tool_call_parser = self.tool_call_parser
 
         return self.structured_outputs_config
 

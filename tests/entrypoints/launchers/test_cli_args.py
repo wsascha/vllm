@@ -257,6 +257,15 @@ def test_enable_auto_choice_fails_without_tool_call_parser(serve_parser):
         validate_parsed_serve_args(args)
 
 
+def test_tool_call_parser_flag_reaches_structured_outputs_config(serve_parser):
+    """`--tool-call-parser` is a frontend flag, but model config hooks read it
+    from the engine's structured outputs config."""
+    args = serve_parser.parse_args(args=["--tool-call-parser", "mistral"])
+    engine_args = AsyncEngineArgs.from_cli_args(args)
+    config = engine_args.create_structured_outputs_config()
+    assert config.tool_call_parser == "mistral"
+
+
 def test_enable_auto_choice_passes_with_tool_call_parser(serve_parser):
     """Ensure validation passes with tool choice enabled with a call parser."""
     args = serve_parser.parse_args(

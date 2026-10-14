@@ -37,6 +37,9 @@ class StructuredOutputsConfig:
     reasoning_parser_plugin: str = ""
     """Path to a dynamically reasoning parser plugin that can be dynamically
     loaded and registered."""
+    tool_call_parser: str = ""
+    """The tool call parser resolved from `--tool-call-parser` or the model's
+    default. Used by `--enable-auto-tool-choice`."""
     enable_in_reasoning: bool = False
     """Whether to use structured input for reasoning."""
 
