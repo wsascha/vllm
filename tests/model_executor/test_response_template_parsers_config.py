@@ -60,26 +60,26 @@ def _parsers(
 @pytest.mark.parametrize(
     ("tokenizer_config", "kwargs", "expected"),
     [
-        pytest.param(FULL, {}, ("hf", ""), id="default"),
+        pytest.param(FULL, {}, ("hf", "hf"), id="default"),
         pytest.param({}, {}, ("", ""), id="no-template"),
         pytest.param(_template(thinking=THINKING), {}, ("hf", ""), id="thinking-only"),
-        pytest.param(_template(tool_calls=TOOL_CALLS), {}, ("", ""), id="tools-only"),
+        pytest.param(_template(tool_calls=TOOL_CALLS), {}, ("", "hf"), id="tools-only"),
         pytest.param(
             FULL, {"reasoning_parser": "qwen3"}, ("qwen3", ""), id="explicit-reasoning"
         ),
         pytest.param(
             FULL, {"tool_call_parser": "hermes"}, ("", "hermes"), id="explicit-tool"
         ),
-        pytest.param(FULL, {"reasoning_parser": "hf"}, ("hf", ""), id="explicit-hf"),
+        pytest.param(FULL, {"reasoning_parser": "hf"}, ("hf", "hf"), id="explicit-hf"),
         pytest.param(
             FULL, {"skip_tokenizer_init": True}, ("", ""), id="skip-tokenizer-init"
         ),
     ],
 )
-def test_reasoning_parser_defaults_to_hf_with_response_template(
+def test_parsers_default_to_hf_with_response_template(
     tmp_path, tokenizer_config, kwargs, expected
 ):
-    """`hf` fails at startup without a `thinking` field and cannot be combined
-    with other parsers, so an explicit non-`hf` tool call parser suppresses the
-    default."""
+    """`hf` fails at startup without a matching template field and cannot be
+    combined with other parsers, so an explicit non-`hf` parser suppresses both
+    defaults."""
     assert _parsers(tmp_path, tokenizer_config, **kwargs) == expected

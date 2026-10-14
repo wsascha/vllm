@@ -28,15 +28,17 @@ class VerifyAndUpdateConfig:
 class ResponseTemplateParsersConfig(VerifyAndUpdateConfig):
     @staticmethod
     def verify_and_update_config(vllm_config: "VllmConfig") -> None:
-        """Default to the `hf` reasoning parser when the tokenizer's response
-        template can parse the model's thinking.
+        """Default to the `hf` reasoning and tool call parsers when the
+        tokenizer's response template can parse the model's output.
 
-        `hf` cannot be combined with other parsers, so the default does not
-        apply when a non-`hf` tool call parser is set.
+        `hf` cannot be combined with other parsers, so neither default applies
+        when the other parser is set to something else.
         """
         config = vllm_config.structured_outputs_config
         model_config = vllm_config.model_config
-        if config.reasoning_parser or model_config.skip_tokenizer_init:
+        if (
+            config.reasoning_parser and config.tool_call_parser
+        ) or model_config.skip_tokenizer_init:
             return
 
         from vllm.transformers_utils.config import try_get_tokenizer_config
@@ -51,11 +53,25 @@ class ResponseTemplateParsersConfig(VerifyAndUpdateConfig):
             return
         fields = template.get("fields", {})
 
-        if "thinking" in fields and config.tool_call_parser in ("", "hf"):
+        if (
+            not config.reasoning_parser
+            and "thinking" in fields
+            and config.tool_call_parser in ("", "hf")
+        ):
             config.reasoning_parser = "hf"
             logger.info(
                 "Using the hf reasoning parser from the tokenizer's response "
                 "template; set --reasoning-parser to override."
+            )
+        if (
+            not config.tool_call_parser
+            and "tool_calls" in fields
+            and config.reasoning_parser in ("", "hf")
+        ):
+            config.tool_call_parser = "hf"
+            logger.info(
+                "Using the hf tool call parser from the tokenizer's response "
+                "template; set --tool-call-parser to override."
             )
 
 
