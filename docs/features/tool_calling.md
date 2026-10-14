@@ -400,6 +400,17 @@ Supported models:
 
 Flags: `--tool-call-parser kimi_k2`
 
+### Kolibri 1 Models (`hf`)
+
+Supported models:
+
+* `Aleph-Alpha/Kolibri-1`
+* `Aleph-Alpha/Kolibri-1-BF16`
+
+Flags: `--tool-call-parser hf --enable-auto-tool-choice`
+
+Kolibri 1 uses the [checkpoint response template](#checkpoint-response-templates-hf), so the limits of the `hf` parser apply.
+
 ### Hunyuan Models (`hunyuan_a13b`)
 
 Supported models:
