@@ -189,6 +189,9 @@ vllm serve <model> \
 Either parser can be selected on its own. Startup fails if the tokenizer has no `response_template`, or if it lacks the `thinking` or `tool_calls`
 field the selected parser needs. The `hf` parser cannot be combined with other reasoning or tool call parsers.
 
+When the tokenizer's `response_template` has a `thinking` field, vLLM selects the `hf` reasoning parser by default, as long as the tool call
+parser is unset or `hf`. Set `--reasoning-parser` to override it.
+
 When streaming, each tool call is emitted whole once its region parses. A call cut off before its closer, for example by a closer that is also a
 stop token, is parsed from the text generated so far; a call that does not parse is dropped.
 

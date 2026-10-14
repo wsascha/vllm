@@ -2658,6 +2658,7 @@ class VllmConfig:
         from vllm.model_executor.models.config import (
             MODELS_CONFIG_MAP,
             HybridAttentionMambaModelConfig,
+            ResponseTemplateParsersConfig,
         )
 
         cls = MODELS_CONFIG_MAP.get(architecture, None)
@@ -2671,6 +2672,9 @@ class VllmConfig:
             cls = MODELS_CONFIG_MAP.get(architecture, None)
         if cls is not None:
             cls.verify_and_update_config(self)
+
+        # After the model's own hook, which may choose parsers.
+        ResponseTemplateParsersConfig.verify_and_update_config(self)
 
         if self.model_config.is_hybrid:
             HybridAttentionMambaModelConfig.verify_and_update_config(self)

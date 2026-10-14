@@ -25,6 +25,40 @@ class VerifyAndUpdateConfig:
         return
 
 
+class ResponseTemplateParsersConfig(VerifyAndUpdateConfig):
+    @staticmethod
+    def verify_and_update_config(vllm_config: "VllmConfig") -> None:
+        """Default to the `hf` reasoning parser when the tokenizer's response
+        template can parse the model's thinking.
+
+        `hf` cannot be combined with other parsers, so the default does not
+        apply when a non-`hf` tool call parser is set.
+        """
+        config = vllm_config.structured_outputs_config
+        model_config = vllm_config.model_config
+        if config.reasoning_parser or model_config.skip_tokenizer_init:
+            return
+
+        from vllm.transformers_utils.config import try_get_tokenizer_config
+
+        tokenizer_config = try_get_tokenizer_config(
+            model_config.tokenizer,
+            trust_remote_code=model_config.trust_remote_code,
+            revision=model_config.tokenizer_revision,
+        )
+        template = (tokenizer_config or {}).get("response_template")
+        if not isinstance(template, dict):
+            return
+        fields = template.get("fields", {})
+
+        if "thinking" in fields and config.tool_call_parser in ("", "hf"):
+            config.reasoning_parser = "hf"
+            logger.info(
+                "Using the hf reasoning parser from the tokenizer's response "
+                "template; set --reasoning-parser to override."
+            )
+
+
 class DeepseekV32ForCausalLM(VerifyAndUpdateConfig):
     @classmethod
     def verify_and_update_config(cls, vllm_config: "VllmConfig") -> None:
